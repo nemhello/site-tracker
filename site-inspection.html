@@ -148,14 +148,34 @@
   /* Section spacing */
   .section { margin-bottom: 24px; }
 
+  /* Bottom tab bar (mobile) */
+  .bottom-nav { display: none; }
+  @media (max-width: 640px) {
+    .bottom-nav {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 100;
+    }
+    .bottom-nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 8px 4px; cursor: pointer;
+      color: var(--muted); font-size: 10px; font-weight: 600; gap: 3px;
+      border: none; background: none; transition: color .15s;
+    }
+    .bottom-nav-item .bn-icon { font-size: 20px; line-height: 1; }
+    .bottom-nav-item.active { color: var(--accent); }
+  }
+
   /* Responsive */
   @media (max-width: 900px) {
     .grid-4 { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
     .sidebar { display: none; }
-    .main { padding: 16px; }
+    .main { padding: 16px; padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
     .grid-2, .grid-3, .grid-4, .form-grid { grid-template-columns: 1fr; }
+    .app-footer { display: none; }
   }
 
   /* Misc */
@@ -547,6 +567,26 @@
   <div class="app-footer">Site Tracker v1.0</div>
 
 </main>
+
+<!-- Mobile bottom nav -->
+<nav class="bottom-nav">
+  <button class="bottom-nav-item active" id="bn-dashboard" onclick="showPage('dashboard')">
+    <span class="bn-icon">📊</span>Home
+  </button>
+  <button class="bottom-nav-item" id="bn-inspection" onclick="showPage('inspection')">
+    <span class="bn-icon">📋</span>Inspect
+  </button>
+  <button class="bottom-nav-item" id="bn-charts" onclick="showPage('charts')">
+    <span class="bn-icon">📈</span>Charts
+  </button>
+  <button class="bottom-nav-item" id="bn-history" onclick="showPage('history')">
+    <span class="bn-icon">🗂️</span>History
+  </button>
+  <button class="bottom-nav-item" id="bn-pm" onclick="showPage('pm')">
+    <span class="bn-icon">🔧</span>PM
+  </button>
+</nav>
+
 </div>
 
 <script>
@@ -579,10 +619,13 @@ function saveDB() {
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(name)) n.classList.add('active');
   });
+  const bn = document.getElementById('bn-' + name);
+  if (bn) bn.classList.add('active');
   if (name === 'dashboard') renderDashboard();
   if (name === 'charts') { populateChartFilter(); renderCharts(); }
   if (name === 'history') { populateHistoryFilter(); renderHistory(); }

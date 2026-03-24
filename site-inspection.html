@@ -174,7 +174,7 @@
     .main { padding: 16px; padding-top: calc(56px + env(safe-area-inset-top)); padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
     .grid-2, .grid-3, .grid-4, .form-grid { grid-template-columns: 1fr; }
     .app-footer { display: block; padding: 16px 0 8px; }
-    input[type="datetime-local"] { font-size: 13px; padding: 8px 8px; }
+    input[type="datetime-local"] { font-size: 13px; padding: 8px 8px; text-align: left; }
   }
 
   /* Misc */
@@ -349,10 +349,11 @@
 
         </div>
         <div class="divider"></div>
-        <div class="row">
-          <button type="submit" class="btn btn-primary">💾 Save Inspection</button>
-          <button type="button" class="btn btn-secondary" onclick="clearForm()">Clear</button>
-          <span class="spacer"></span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button type="submit" class="btn btn-primary">💾 Save Inspection</button>
+            <button type="button" class="btn btn-secondary" onclick="clearForm()">Clear</button>
+          </div>
           <span class="text-sm text-muted" id="form-msg"></span>
         </div>
       </form>

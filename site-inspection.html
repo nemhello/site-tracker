@@ -233,6 +233,17 @@
       <p>Overview of all sites and active alerts</p>
     </div>
 
+    <!-- Backup reminder banner -->
+    <div id="backup-banner" style="display:none;background:rgba(234,179,8,.10);border:1px solid rgba(234,179,8,.35);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:18px">💾</span>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px;color:var(--yellow)" id="backup-banner-title">Backup Reminder</div>
+        <div style="font-size:12px;color:var(--muted)" id="backup-banner-desc">Your last file export was more than a day ago.</div>
+      </div>
+      <button class="btn btn-sm" style="background:var(--yellow);color:#000;font-weight:700" onclick="exportJSONFromBanner()">Export Now</button>
+      <button class="btn btn-secondary btn-sm" onclick="dismissBackupBanner()">Dismiss</button>
+    </div>
+
     <!-- Stats -->
     <div class="grid-4 section" id="dash-stats">
       <div class="stat-card"><div class="stat-label">Total Inspections</div><div class="stat-value" id="stat-total">0</div><div class="stat-sub">all time</div></div>
@@ -659,7 +670,7 @@ function showPage(name) {
   });
   const bn = document.getElementById('bn-' + name);
   if (bn) bn.classList.add('active');
-  if (name === 'dashboard') renderDashboard();
+  if (name === 'dashboard') { renderDashboard(); checkBackupBanner(); }
   if (name === 'charts') { populateChartFilter(); renderCharts(); }
   if (name === 'history') { populateHistoryFilter(); renderHistory(); }
   if (name === 'pm') { loadPMForm(); populatePMSites(); renderOilLog(); renderHVACTable(); }
@@ -1157,6 +1168,47 @@ function exportJSON() {
   a.href = URL.createObjectURL(blob);
   a.download = `site-tracker-backup-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
+  localStorage.setItem('site-tracker-last-export', new Date().toISOString());
+  document.getElementById('backup-banner').style.display = 'none';
+}
+
+function exportJSONFromBanner() {
+  exportJSON();
+}
+
+function dismissBackupBanner() {
+  localStorage.setItem('site-tracker-banner-dismissed', new Date().toISOString().slice(0,10));
+  document.getElementById('backup-banner').style.display = 'none';
+}
+
+function autoSnapshot() {
+  const today = new Date().toISOString().slice(0, 10);
+  const lastSnap = localStorage.getItem('site-tracker-snapshot-date');
+  if (lastSnap !== today && db.inspections.length > 0) {
+    localStorage.setItem('site-tracker-snapshot', JSON.stringify(db));
+    localStorage.setItem('site-tracker-snapshot-date', today);
+  }
+}
+
+function checkBackupBanner() {
+  const lastExport = localStorage.getItem('site-tracker-last-export');
+  const dismissed = localStorage.getItem('site-tracker-banner-dismissed');
+  const today = new Date().toISOString().slice(0, 10);
+  if (dismissed === today) return;
+  if (db.inspections.length === 0) return;
+  const banner = document.getElementById('backup-banner');
+  if (!lastExport) {
+    banner.style.display = 'flex';
+    document.getElementById('backup-banner-title').textContent = 'No backup file yet';
+    document.getElementById('backup-banner-desc').textContent = 'You have data but haven\'t exported a backup yet. Tap to save a file.';
+  } else {
+    const daysSince = Math.floor((Date.now() - new Date(lastExport)) / 86400000);
+    if (daysSince >= 1) {
+      banner.style.display = 'flex';
+      document.getElementById('backup-banner-title').textContent = `Backup ${daysSince === 1 ? '1 day' : daysSince + ' days'} old`;
+      document.getElementById('backup-banner-desc').textContent = `Last exported ${daysSince === 1 ? 'yesterday' : daysSince + ' days ago'}. Tap to export a fresh backup.`;
+    }
+  }
 }
 
 function importJSON(e) {
@@ -1264,7 +1316,9 @@ function levelBadge(val) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 loadDB();
+autoSnapshot();
 renderDashboard();
+checkBackupBanner();
 initForm();
 populateSiteSelect();
 

@@ -434,6 +434,20 @@
         <span class="text-sm text-muted" id="hist-count"></span>
       </div>
     </div>
+
+    <!-- Data backup card -->
+    <div class="card mt-4">
+      <div class="card-title">💾 Data Backup &amp; Restore</div>
+      <p class="text-sm text-muted" style="margin-bottom:16px">Export a full backup of all inspections, HVAC logs, oil changes, and settings. Import it on any device to restore.</p>
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <button class="btn btn-primary" onclick="exportJSON()">⬇️ Export Backup (.json)</button>
+        <label class="btn btn-secondary" style="cursor:pointer">
+          ⬆️ Import Backup
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
+        </label>
+      </div>
+      <div id="import-msg" style="margin-top:10px;font-size:13px"></div>
+    </div>
   </div>
 
   <!-- PM RULES -->
@@ -1133,6 +1147,46 @@ function deleteOilChange(id) {
   saveDB();
   renderOilLog();
   updateAlertBadge();
+}
+
+// ─── Backup / Restore ─────────────────────────────────────────────────────────
+function exportJSON() {
+  const payload = JSON.stringify(db, null, 2);
+  const blob = new Blob([payload], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `site-tracker-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  const msg = document.getElementById('import-msg');
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.inspections || !imported.pm) throw new Error('Invalid backup file.');
+      if (!confirm(`Import backup?\n\nThis will replace ALL current data with:\n• ${imported.inspections.length} inspections\n• ${(imported.oilChanges||[]).length} oil change records\n• ${(imported.hvacCleans||[]).length} HVAC records\n\nCurrent data will be overwritten.`)) {
+        e.target.value = '';
+        return;
+      }
+      db = imported;
+      if (!db.hvacCleans) db.hvacCleans = [];
+      if (!db.hvac) db.hvac = {};
+      saveDB();
+      renderDashboard();
+      msg.style.color = 'var(--green)';
+      msg.textContent = `✓ Imported successfully — ${db.inspections.length} inspections loaded.`;
+      setTimeout(() => msg.textContent = '', 4000);
+    } catch(err) {
+      msg.style.color = 'var(--red)';
+      msg.textContent = '✕ Import failed: ' + err.message;
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ─── HVAC ─────────────────────────────────────────────────────────────────────

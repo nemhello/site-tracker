@@ -32,8 +32,15 @@
 
   /* Layout */
   .app { display: flex; min-height: 100vh; }
-  .sidebar { width: 220px; min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-  .main { flex: 1; padding: 28px; overflow: auto; }
+  .sidebar { width: 220px; min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; padding-top: calc(20px + env(safe-area-inset-top)); }
+  .main { flex: 1; padding: 28px; overflow: auto; padding-top: calc(28px + env(safe-area-inset-top)); }
+
+  /* Top date bar */
+  .top-bar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px; }
+  .top-date { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.3px; }
+
+  /* Footer */
+  .app-footer { text-align: center; padding: 24px 0 calc(12px + env(safe-area-inset-bottom)); color: var(--muted); font-size: 11px; }
 
   /* Sidebar */
   .logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); }
@@ -194,6 +201,9 @@
 
 <!-- Main -->
 <main class="main">
+  <div class="top-bar">
+    <span class="top-date" id="top-date"></span>
+  </div>
 
   <!-- DASHBOARD -->
   <div id="page-dashboard" class="page active">
@@ -533,6 +543,8 @@
       </div>
     </div>
   </div>
+
+  <div class="app-footer">Site Tracker v1.0</div>
 
 </main>
 </div>
@@ -1096,6 +1108,13 @@ loadDB();
 renderDashboard();
 initForm();
 populateSiteSelect();
+
+// Top date
+(function() {
+  const d = new Date();
+  const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('top-date').textContent = d.toLocaleDateString(undefined, opts);
+})();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});

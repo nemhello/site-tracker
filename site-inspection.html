@@ -173,9 +173,10 @@
   }
   @media (max-width: 640px) {
     .sidebar { display: none; }
-    .main { padding: 16px; padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+    .main { padding: 16px; padding-top: calc(56px + env(safe-area-inset-top)); padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
     .grid-2, .grid-3, .grid-4, .form-grid { grid-template-columns: 1fr; }
     .app-footer { display: none; }
+    input[type="datetime-local"] { font-size: 13px; padding: 8px 8px; }
   }
 
   /* Misc */
@@ -325,23 +326,13 @@
           </div>
 
           <div class="form-group">
-            <label>Battery Charge (%)</label>
-            <input type="number" id="f-battery" min="0" max="100" placeholder="e.g. 95">
+            <label>Battery Voltage (V)</label>
+            <input type="number" id="f-battery" min="0" step="0.1" placeholder="e.g. 12.6">
           </div>
 
           <div class="form-group">
             <label>Battery Errors</label>
             <input type="text" id="f-battery-errors" placeholder="None, or describe error codes">
-          </div>
-
-          <div class="form-group">
-            <label>UPS Load (%)</label>
-            <input type="number" id="f-ups-load" min="0" max="100" placeholder="e.g. 40">
-          </div>
-
-          <div class="form-group">
-            <label>Ambient Temp (°F)</label>
-            <input type="number" id="f-temp" placeholder="e.g. 72">
           </div>
 
           <div class="form-group full">
@@ -390,18 +381,14 @@
         <div class="chart-container"><canvas id="chart-propane"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">🔋 Battery Charge (%)</div>
+        <div class="card-title">🔋 Battery Voltage (V)</div>
         <div class="chart-container"><canvas id="chart-battery"></canvas></div>
       </div>
     </div>
-    <div class="grid-2 section">
+    <div class="section">
       <div class="card">
         <div class="card-title">⚙️ Generator Runtime (hours)</div>
         <div class="chart-container"><canvas id="chart-runtime"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">📦 UPS Load (%)</div>
-        <div class="chart-container"><canvas id="chart-load"></canvas></div>
       </div>
     </div>
 
@@ -438,7 +425,7 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Date</th><th>Site</th><th>Tech</th><th>Propane</th><th>Runtime (h)</th><th>Oil</th><th>Coolant</th><th>Battery</th><th>Errors</th><th>Notes</th><th></th></tr></thead>
+          <thead><tr><th>Date</th><th>Site</th><th>Tech</th><th>Propane</th><th>Runtime (h)</th><th>Oil</th><th>Coolant</th><th>Battery (V)</th><th>Errors</th><th>Notes</th><th></th></tr></thead>
           <tbody id="history-body"><tr><td colspan="11" class="empty-state">No records yet</td></tr></tbody>
         </table>
       </div>
@@ -476,31 +463,16 @@
 
         <div class="rule-item">
           <div class="rule-label">
-            <div class="rule-name">🔋 Battery Low Warning</div>
-            <div class="rule-desc">Alert when battery charge drops below this level</div>
+            <div class="rule-name">🔋 Battery Voltage Warning</div>
+            <div class="rule-desc">Alert when battery voltage drops below this level (V)</div>
           </div>
           <div class="rule-input-wrap">
-            <input type="number" id="pm-battery-warn" min="0" max="100" value="70" onchange="savePM()">
-            <span class="rule-unit">% warn</span>
+            <input type="number" id="pm-battery-warn" min="0" step="0.1" value="12.1" onchange="savePM()">
+            <span class="rule-unit">V warn</span>
           </div>
           <div class="rule-input-wrap">
-            <input type="number" id="pm-battery-crit" min="0" max="100" value="50" onchange="savePM()">
-            <span class="rule-unit">% critical</span>
-          </div>
-        </div>
-
-        <div class="rule-item">
-          <div class="rule-label">
-            <div class="rule-name">📦 UPS Load Warning</div>
-            <div class="rule-desc">Alert when UPS load exceeds this level</div>
-          </div>
-          <div class="rule-input-wrap">
-            <input type="number" id="pm-load-warn" min="0" max="100" value="75" onchange="savePM()">
-            <span class="rule-unit">% warn</span>
-          </div>
-          <div class="rule-input-wrap">
-            <input type="number" id="pm-load-crit" min="0" max="100" value="90" onchange="savePM()">
-            <span class="rule-unit">% critical</span>
+            <input type="number" id="pm-battery-crit" min="0" step="0.1" value="11.8" onchange="savePM()">
+            <span class="rule-unit">V critical</span>
           </div>
         </div>
       </div>
@@ -540,6 +512,17 @@
             <span class="rule-unit">days</span>
           </div>
         </div>
+
+        <div class="rule-item">
+          <div class="rule-label">
+            <div class="rule-name">❄️ HVAC Clean Interval</div>
+            <div class="rule-desc">Alert when HVAC hasn't been cleaned in this many days</div>
+          </div>
+          <div class="rule-input-wrap">
+            <input type="number" id="pm-hvac-days" min="1" value="90" onchange="savePM()">
+            <span class="rule-unit">days</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -560,6 +543,28 @@
           <thead><tr><th>Site</th><th>Date</th><th>Hours at Change</th><th></th></tr></thead>
           <tbody id="oil-log-body"><tr><td colspan="4" class="empty-state">No oil changes logged</td></tr></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- HVAC section -->
+    <div class="card mt-4">
+      <div class="card-title">❄️ HVAC Filter & Cleaning Log</div>
+      <p class="text-sm text-muted" style="margin-bottom:14px">Track filter sizes and last clean date per site. Alert fires when overdue.</p>
+      <div class="table-wrap" style="margin-bottom:16px">
+        <table id="hvac-table">
+          <thead><tr><th>Site</th><th>Filter Size</th><th>Last Cleaned</th><th>Days Since</th><th>Status</th><th></th></tr></thead>
+          <tbody id="hvac-body"><tr><td colspan="6" class="empty-state">No sites yet</td></tr></tbody>
+        </table>
+      </div>
+      <div class="divider"></div>
+      <p class="text-sm text-muted" style="margin-bottom:10px;margin-top:10px">Log a cleaning or update filter size:</p>
+      <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <select id="hvac-site" style="width:160px">
+          <option value="">Select site…</option>
+        </select>
+        <input type="text" id="hvac-filter-size" placeholder="Filter size (e.g. 16x20x1)" style="width:180px">
+        <input type="date" id="hvac-clean-date" style="width:150px">
+        <button class="btn btn-primary btn-sm" onclick="logHVACClean()">Log Clean</button>
       </div>
     </div>
   </div>
@@ -591,24 +596,38 @@
 
 <script>
 // ─── Data store ───────────────────────────────────────────────────────────────
+const DEFAULT_SITES = [
+  'Site 01','Site 02','Site 03','Site 04','Site 05',
+  'Site 06','Site 07','Site 08','Site 09','Site 10'
+];
+
 let db = {
   inspections: [],
-  sites: [],
+  sites: [...DEFAULT_SITES],
   oilChanges: [],
+  hvacCleans: [],
+  hvac: {},
   pm: {
     propaneWarn: 30, propaneCrit: 15,
-    batteryWarn: 70, batteryCrit: 50,
-    loadWarn: 75, loadCrit: 90,
+    batteryVoltWarn: 12.1, batteryVoltCrit: 11.8,
     oilInterval: 250,
     overdueDays: 30,
-    propaneLeadtime: 14
+    propaneLeadtime: 14,
+    hvacDays: 90
   }
 };
 
 function loadDB() {
   try {
     const saved = localStorage.getItem('site-inspection-db');
-    if (saved) db = JSON.parse(saved);
+    if (saved) {
+      db = JSON.parse(saved);
+      if (!db.hvacCleans) db.hvacCleans = [];
+      if (!db.hvac) db.hvac = {};
+      if (!db.pm.hvacDays) db.pm.hvacDays = 90;
+      if (db.pm.batteryVoltWarn === undefined) { db.pm.batteryVoltWarn = 12.1; db.pm.batteryVoltCrit = 11.8; }
+    }
+    if (!db.sites || db.sites.length === 0) db.sites = [...DEFAULT_SITES];
   } catch(e) {}
 }
 function saveDB() {
@@ -629,7 +648,7 @@ function showPage(name) {
   if (name === 'dashboard') renderDashboard();
   if (name === 'charts') { populateChartFilter(); renderCharts(); }
   if (name === 'history') { populateHistoryFilter(); renderHistory(); }
-  if (name === 'pm') { loadPMForm(); populatePMSites(); renderOilLog(); }
+  if (name === 'pm') { loadPMForm(); populatePMSites(); renderOilLog(); renderHVACTable(); }
   if (name === 'inspection') { initForm(); populateSiteSelect(); }
 }
 
@@ -690,8 +709,6 @@ function submitInspection(e) {
     coolant: document.getElementById('f-coolant').value,
     battery: parseFloat(document.getElementById('f-battery').value) || null,
     batteryErrors: document.getElementById('f-battery-errors').value.trim(),
-    upsLoad: parseFloat(document.getElementById('f-ups-load').value) || null,
-    temp: parseFloat(document.getElementById('f-temp').value) || null,
     notes: document.getElementById('f-notes').value.trim()
   };
 
@@ -776,7 +793,7 @@ function renderDashboard() {
         <td><strong>${esc(site)}</strong></td>
         <td>${fmtDate(last.date)}<br><span class="text-sm text-muted">${daysSince}d ago</span></td>
         <td><span class="badge ${propaneBadge(last.propane)}">${last.propane}%</span></td>
-        <td>${last.battery != null ? `<span class="badge ${batteryBadge(last.battery)}">${last.battery}%</span>` : '—'}</td>
+        <td>${last.battery != null ? `<span class="badge ${batteryBadge(last.battery)}">${last.battery}V</span>` : '—'}</td>
         <td>${last.runtime}</td>
         <td>${status}</td>
       </tr>`;
@@ -813,12 +830,12 @@ function computeAlerts() {
       alerts.push({ level: 'warning', icon: '🔥', site, title: `${site}: Propane Low (${last.propane}%)`, desc: `Below ${pm.propaneWarn}% — schedule refill` });
     }
 
-    // Battery
+    // Battery voltage
     if (last.battery != null) {
-      if (last.battery <= pm.batteryCrit) {
-        alerts.push({ level: 'critical', icon: '🔋', site, title: `${site}: Battery Critical (${last.battery}%)`, desc: `Battery charge below ${pm.batteryCrit}%` });
-      } else if (last.battery <= pm.batteryWarn) {
-        alerts.push({ level: 'warning', icon: '🔋', site, title: `${site}: Battery Low (${last.battery}%)`, desc: `Battery charge below ${pm.batteryWarn}%` });
+      if (last.battery <= pm.batteryVoltCrit) {
+        alerts.push({ level: 'critical', icon: '🔋', site, title: `${site}: Battery Critical (${last.battery}V)`, desc: `Voltage below ${pm.batteryVoltCrit}V — immediate attention required` });
+      } else if (last.battery <= pm.batteryVoltWarn) {
+        alerts.push({ level: 'warning', icon: '🔋', site, title: `${site}: Battery Low (${last.battery}V)`, desc: `Voltage below ${pm.batteryVoltWarn}V` });
       }
     }
 
@@ -835,15 +852,6 @@ function computeAlerts() {
     // Coolant level
     if (last.coolant === 'Low' || last.coolant === 'Add') {
       alerts.push({ level: last.coolant === 'Add' ? 'critical' : 'warning', icon: '💧', site, title: `${site}: Coolant Level ${last.coolant}`, desc: 'Check and service coolant' });
-    }
-
-    // UPS load
-    if (last.upsLoad != null) {
-      if (last.upsLoad >= pm.loadCrit) {
-        alerts.push({ level: 'critical', icon: '📦', site, title: `${site}: UPS Overloaded (${last.upsLoad}%)`, desc: `Load above ${pm.loadCrit}%` });
-      } else if (last.upsLoad >= pm.loadWarn) {
-        alerts.push({ level: 'warning', icon: '📦', site, title: `${site}: UPS Load High (${last.upsLoad}%)`, desc: `Load above ${pm.loadWarn}%` });
-      }
     }
 
     // Overdue inspection
@@ -867,6 +875,15 @@ function computeAlerts() {
       const daysLeft = last.propane / consumption.ratePerDay;
       if (daysLeft <= pm.propaneLeadtime) {
         alerts.push({ level: 'warning', icon: '⛽', site, title: `${site}: Propane Refill Soon`, desc: `Est. ${Math.round(daysLeft)} days remaining at current rate` });
+      }
+    }
+
+    // HVAC overdue
+    const hvacInfo = db.hvac[site];
+    if (hvacInfo && hvacInfo.lastCleanDate) {
+      const hvacDays = Math.floor((Date.now() - new Date(hvacInfo.lastCleanDate)) / 86400000);
+      if (hvacDays > pm.hvacDays) {
+        alerts.push({ level: 'warning', icon: '❄️', site, title: `${site}: HVAC Clean Overdue`, desc: `Last cleaned ${hvacDays} days ago (interval: ${pm.hvacDays} days)` });
       }
     }
   });
@@ -898,9 +915,8 @@ function renderCharts() {
   const sites = siteFilter ? [siteFilter] : getSites();
 
   renderLineChart('chart-propane', inspections, sites, 'propane', 'Propane %', [0, 100]);
-  renderLineChart('chart-battery', inspections, sites, 'battery', 'Battery %', [0, 100]);
+  renderLineChart('chart-battery', inspections, sites, 'battery', 'Battery Voltage (V)', null);
   renderLineChart('chart-runtime', inspections, sites, 'runtime', 'Hours', null);
-  renderLineChart('chart-load', inspections, sites, 'upsLoad', 'Load %', [0, 100]);
   renderConsumptionTable(siteFilter);
 }
 
@@ -1016,7 +1032,7 @@ function renderHistory() {
     <td>${r.runtime}</td>
     <td><span class="badge ${levelBadge(r.oil)}">${esc(r.oil)}</span></td>
     <td><span class="badge ${levelBadge(r.coolant)}">${esc(r.coolant)}</span></td>
-    <td>${r.battery != null ? `<span class="badge ${batteryBadge(r.battery)}">${r.battery}%</span>` : '—'}</td>
+    <td>${r.battery != null ? `<span class="badge ${batteryBadge(r.battery)}">${r.battery}V</span>` : '—'}</td>
     <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.batteryErrors||'')}">${r.batteryErrors && r.batteryErrors !== 'none' && r.batteryErrors !== 'None' && r.batteryErrors !== '' ? `<span class="badge badge-red">${esc(r.batteryErrors)}</span>` : '<span class="text-muted">None</span>'}</td>
     <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.notes||'')}">${esc(r.notes||'')}</td>
     <td><button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id})">✕</button></td>
@@ -1033,10 +1049,10 @@ function deleteRecord(id) {
 
 // ─── CSV Export ───────────────────────────────────────────────────────────────
 function exportCSV() {
-  const headers = ['Date','Site','Technician','Propane%','Runtime_hrs','Oil','Coolant','Battery%','BatteryErrors','UPS_Load%','Temp_F','Notes'];
+  const headers = ['Date','Site','Technician','Propane%','Runtime_hrs','Oil','Coolant','Battery_V','BatteryErrors','Notes'];
   const rows = db.inspections.map(r => [
     r.date, r.site, r.tech||'', r.propane, r.runtime, r.oil, r.coolant,
-    r.battery??'', r.batteryErrors||'', r.upsLoad??'', r.temp??'', (r.notes||'').replace(/"/g,'""')
+    r.battery??'', r.batteryErrors||'', (r.notes||'').replace(/"/g,'""')
   ].map(v => `"${v}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -1051,38 +1067,37 @@ function loadPMForm() {
   const pm = db.pm;
   document.getElementById('pm-propane-warn').value = pm.propaneWarn;
   document.getElementById('pm-propane-crit').value = pm.propaneCrit;
-  document.getElementById('pm-battery-warn').value = pm.batteryWarn;
-  document.getElementById('pm-battery-crit').value = pm.batteryCrit;
-  document.getElementById('pm-load-warn').value = pm.loadWarn;
-  document.getElementById('pm-load-crit').value = pm.loadCrit;
+  document.getElementById('pm-battery-warn').value = pm.batteryVoltWarn;
+  document.getElementById('pm-battery-crit').value = pm.batteryVoltCrit;
   document.getElementById('pm-oil-interval').value = pm.oilInterval;
   document.getElementById('pm-overdue-days').value = pm.overdueDays;
   document.getElementById('pm-propane-leadtime').value = pm.propaneLeadtime;
+  document.getElementById('pm-hvac-days').value = pm.hvacDays;
 }
 
 function savePM() {
   db.pm = {
     propaneWarn: parseInt(document.getElementById('pm-propane-warn').value) || 30,
     propaneCrit: parseInt(document.getElementById('pm-propane-crit').value) || 15,
-    batteryWarn: parseInt(document.getElementById('pm-battery-warn').value) || 70,
-    batteryCrit: parseInt(document.getElementById('pm-battery-crit').value) || 50,
-    loadWarn: parseInt(document.getElementById('pm-load-warn').value) || 75,
-    loadCrit: parseInt(document.getElementById('pm-load-crit').value) || 90,
+    batteryVoltWarn: parseFloat(document.getElementById('pm-battery-warn').value) || 12.1,
+    batteryVoltCrit: parseFloat(document.getElementById('pm-battery-crit').value) || 11.8,
     oilInterval: parseInt(document.getElementById('pm-oil-interval').value) || 250,
     overdueDays: parseInt(document.getElementById('pm-overdue-days').value) || 30,
-    propaneLeadtime: parseInt(document.getElementById('pm-propane-leadtime').value) || 14
+    propaneLeadtime: parseInt(document.getElementById('pm-propane-leadtime').value) || 14,
+    hvacDays: parseInt(document.getElementById('pm-hvac-days').value) || 90
   };
   saveDB();
   updateAlertBadge();
 }
 
 function populatePMSites() {
-  const sel = document.getElementById('pm-oil-site');
   const sites = getSites();
-  sel.innerHTML = '<option value="">Select site…</option>' +
-    sites.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  const opts = '<option value="">Select site…</option>' + sites.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  document.getElementById('pm-oil-site').innerHTML = opts;
+  document.getElementById('hvac-site').innerHTML = opts;
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('pm-oil-date').value = today;
+  document.getElementById('hvac-clean-date').value = today;
 }
 
 function logOilChange() {
@@ -1120,6 +1135,53 @@ function deleteOilChange(id) {
   updateAlertBadge();
 }
 
+// ─── HVAC ─────────────────────────────────────────────────────────────────────
+function logHVACClean() {
+  const site = document.getElementById('hvac-site').value;
+  const filterSize = document.getElementById('hvac-filter-size').value.trim();
+  const date = document.getElementById('hvac-clean-date').value;
+  if (!site || !date) { alert('Please select a site and date.'); return; }
+  if (!db.hvac[site]) db.hvac[site] = {};
+  db.hvac[site].lastCleanDate = date;
+  if (filterSize) db.hvac[site].filterSize = filterSize;
+  db.hvacCleans.push({ id: Date.now(), site, date, filterSize });
+  saveDB();
+  renderHVACTable();
+  updateAlertBadge();
+  document.getElementById('hvac-filter-size').value = '';
+}
+
+function renderHVACTable() {
+  const sites = getSites();
+  const tbody = document.getElementById('hvac-body');
+  const today = Date.now();
+  const rows = sites.map(site => {
+    const info = db.hvac[site] || {};
+    const filterSize = info.filterSize || '—';
+    const lastClean = info.lastCleanDate || '';
+    const daysSince = lastClean ? Math.floor((today - new Date(lastClean)) / 86400000) : null;
+    const overdue = daysSince !== null && daysSince > db.pm.hvacDays;
+    const statusBadge = !lastClean ? '<span class="badge badge-gray">Not recorded</span>'
+      : overdue ? '<span class="badge badge-red">Overdue</span>'
+      : '<span class="badge badge-green">OK</span>';
+    return `<tr>
+      <td><strong>${esc(site)}</strong></td>
+      <td>${esc(filterSize)}</td>
+      <td>${lastClean || '—'}</td>
+      <td>${daysSince !== null ? daysSince + 'd' : '—'}</td>
+      <td>${statusBadge}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="prefillHVAC('${esc(site)}')">Update</button></td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('') || '<tr><td colspan="6" class="empty-state">No sites</td></tr>';
+}
+
+function prefillHVAC(site) {
+  document.getElementById('hvac-site').value = site;
+  const info = db.hvac[site] || {};
+  if (info.filterSize) document.getElementById('hvac-filter-size').value = info.filterSize;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1133,9 +1195,9 @@ function propaneBadge(pct) {
   if (pct <= db.pm.propaneWarn) return 'badge-yellow';
   return 'badge-green';
 }
-function batteryBadge(pct) {
-  if (pct <= db.pm.batteryCrit) return 'badge-red';
-  if (pct <= db.pm.batteryWarn) return 'badge-yellow';
+function batteryBadge(v) {
+  if (v <= db.pm.batteryVoltCrit) return 'badge-red';
+  if (v <= db.pm.batteryVoltWarn) return 'badge-yellow';
   return 'badge-green';
 }
 function levelBadge(val) {

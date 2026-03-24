@@ -1,7 +1,8 @@
-const CACHE = 'site-tracker-v1';
+const CACHE = 'site-tracker-v1.1.0';
 const ASSETS = [
   './site-inspection.html',
   './manifest.json',
+  './version.json',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'
 ];
 

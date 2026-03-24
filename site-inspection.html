@@ -591,7 +591,17 @@
     </div>
   </div>
 
-  <div class="app-footer">Site Tracker v1.0</div>
+  <div class="app-footer">
+    <a href="https://nemhello.github.io/site-tracker/" target="_blank" id="update-link"
+       onclick="checkForUpdate(event)"
+       style="color:var(--muted);text-decoration:none;font-size:11px;cursor:pointer">
+      nemhello.github.io/site-tracker
+    </a>
+    <div id="version-label" style="font-size:12px;margin-top:4px;cursor:pointer" onclick="checkForUpdate(event)">
+      Site Tracker v1.1.0
+    </div>
+    <div id="update-msg" style="font-size:12px;margin-top:6px;min-height:18px"></div>
+  </div>
 
 </main>
 
@@ -617,6 +627,49 @@
 </div>
 
 <script>
+// ─── Version ──────────────────────────────────────────────────────────────────
+const APP_VERSION = '1.1.0';
+const VERSION_URL = 'https://nemhello.github.io/site-tracker/version.json';
+
+async function checkForUpdate(e) {
+  if (e) e.preventDefault();
+  const msg = document.getElementById('update-msg');
+  const lbl = document.getElementById('version-label');
+  msg.style.color = 'var(--muted)';
+  msg.textContent = '⏳ Checking for updates…';
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('Network error');
+    const data = await res.json();
+    const remote = data.version;
+    if (remote === APP_VERSION) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = '✓ You\'re on the latest version';
+      setTimeout(() => msg.textContent = '', 3000);
+    } else {
+      msg.style.color = 'var(--yellow)';
+      msg.innerHTML = `🔄 Update available (v${remote}) — <span style="text-decoration:underline;cursor:pointer" onclick="installUpdate()">Tap to install</span>`;
+    }
+  } catch(err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = '✕ Could not check for updates';
+    setTimeout(() => msg.textContent = '', 3000);
+  }
+}
+
+async function installUpdate() {
+  const msg = document.getElementById('update-msg');
+  msg.style.color = 'var(--accent)';
+  msg.textContent = '⬇️ Installing update…';
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  }
+  location.reload(true);
+}
+
 // ─── Data store ───────────────────────────────────────────────────────────────
 const DEFAULT_SITES = [
   'Site 01','Site 02','Site 03','Site 04','Site 05',
